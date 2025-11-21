@@ -1,11 +1,51 @@
-import React from 'react';
-import Spline from '@splinetool/react-spline';
+import React, { Suspense, useEffect, useState } from 'react';
+
+// Lazy-load Spline so a failure there never blocks initial render
+const Spline = React.lazy(() => import('@splinetool/react-spline'));
+
+function ErrorBoundary({ children, fallback }) {
+  const [hasError, setHasError] = useState(false);
+  useEffect(() => {
+    const handler = (e) => {
+      // If any error occurs during lazy component mount, show fallback
+      setHasError(true);
+    };
+    window.addEventListener('error', handler);
+    window.addEventListener('unhandledrejection', handler);
+    return () => {
+      window.removeEventListener('error', handler);
+      window.removeEventListener('unhandledrejection', handler);
+    };
+  }, []);
+  if (hasError) return fallback || null;
+  return children;
+}
 
 export default function Hero() {
+  const [canUseWebGL, setCanUseWebGL] = useState(true);
+  useEffect(() => {
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      if (!gl) setCanUseWebGL(false);
+    } catch {
+      setCanUseWebGL(false);
+    }
+  }, []);
+
   return (
     <section className="relative min-h-[90vh] w-full bg-white text-black overflow-hidden flex items-center">
+      {/* Background layer: either Spline or a soft gradient fallback */}
       <div className="absolute inset-0">
-        <Spline scene="https://prod.spline.design/kow0cKDK6Tap7xO9/scene.splinecode" style={{ width: '100%', height: '100%' }} />
+        {canUseWebGL ? (
+          <ErrorBoundary fallback={<div className="h-full w-full bg-[radial-gradient(80%_80%_at_50%_40%,rgba(0,0,0,0.06),transparent)]" />}> 
+            <Suspense fallback={<div className="h-full w-full bg-[radial-gradient(80%_80%_at_50%_40%,rgba(0,0,0,0.06),transparent)]" />}> 
+              <Spline.default scene="https://prod.spline.design/kow0cKDK6Tap7xO9/scene.splinecode" style={{ width: '100%', height: '100%' }} />
+            </Suspense>
+          </ErrorBoundary>
+        ) : (
+          <div className="h-full w-full bg-[radial-gradient(80%_80%_at_50%_40%,rgba(0,0,0,0.06),transparent)]" />
+        )}
       </div>
 
       {/* subtle vignette and gradient overlays for contrast */}
@@ -33,6 +73,9 @@ export default function Hero() {
               Join Community
             </a>
           </div>
+          {!canUseWebGL && (
+            <p className="mt-4 text-sm text-neutral-500">Interactive 3D is unavailable on this device. Showing a static background instead.</p>
+          )}
         </div>
       </div>
     </section>
