@@ -4,21 +4,6 @@ import { motion } from 'framer-motion';
 // Lazy-load Spline so a failure there never blocks initial render
 const Spline = React.lazy(() => import('@splinetool/react-spline'));
 
-function ErrorBoundary({ children, fallback }) {
-  const [hasError, setHasError] = useState(false);
-  useEffect(() => {
-    const handler = () => setHasError(true);
-    window.addEventListener('error', handler);
-    window.addEventListener('unhandledrejection', handler);
-    return () => {
-      window.removeEventListener('error', handler);
-      window.removeEventListener('unhandledrejection', handler);
-    };
-  }, []);
-  if (hasError) return fallback || null;
-  return children;
-}
-
 export default function Hero() {
   const [canUseWebGL, setCanUseWebGL] = useState(true);
   useEffect(() => {
@@ -38,7 +23,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative min-h-[100vh] w-full bg-white text-black overflow-hidden flex items-center">
+    <section id="top" className="relative min-h-[100vh] w-full bg-white text-black overflow-hidden flex items-center pt-16">
       {/* Animated gradient rings backdrop */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-[140vmin] rounded-full bg-[conic-gradient(from_0deg,transparent_0_60%,rgba(0,0,0,0.12)_60_62%,transparent_62_100%)] animate-[spin_18s_linear_infinite]" />
@@ -48,12 +33,10 @@ export default function Hero() {
       {/* Spline brain scene or graceful fallback */}
       <div className="absolute inset-0">
         {canUseWebGL ? (
-          <ErrorBoundary fallback={<div className="h-full w-full bg-[radial-gradient(80%_80%_at_50%_40%,rgba(0,0,0,0.06),transparent)]" />}> 
-            <Suspense fallback={<div className="h-full w-full bg-[radial-gradient(80%_80%_at_50%_40%,rgba(0,0,0,0.06),transparent)]" />}> 
-              {/* Brain-focused scene */}
-              <Spline.default scene="https://prod.spline.design/zJf2x7zAZwR24o8D/scene.splinecode" style={{ width: '100%', height: '100%' }} />
-            </Suspense>
-          </ErrorBoundary>
+          <Suspense fallback={<div className="h-full w-full bg-[radial-gradient(80%_80%_at_50%_40%,rgba(0,0,0,0.06),transparent)]" />}> 
+            {/* Brain-focused scene */}
+            <Spline scene="https://prod.spline.design/zJf2x7zAZwR24o8D/scene.splinecode" style={{ width: '100%', height: '100%' }} />
+          </Suspense>
         ) : (
           <div className="h-full w-full bg-white">
             {/* Fallback: animated radial halo mimicking brain aura */}
@@ -108,9 +91,6 @@ export default function Hero() {
               Get Started
             </a>
           </motion.div>
-          {!canUseWebGL && (
-            <p className="mt-4 text-sm text-neutral-500">Interactive brain animation unavailable on this device. Showing a soft animated backdrop instead.</p>
-          )}
         </div>
       </motion.div>
     </section>
